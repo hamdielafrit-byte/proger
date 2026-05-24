@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local AI Language Translator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .translator-container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 1000px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 24px;
+        }
+
+        h2 {
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .panels {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        select {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            background-color: #fff;
+            font-size: 14px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: #4a90e2;
+        }
+
+        textarea {
+            width: 100%;
+            height: 220px;
+            padding: 15px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            resize: none;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: #4a90e2;
+        }
+
+        #output-text {
+            background-color: #f8f9fa;
+        }
+
+        .button-zone {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        button:disabled {
+            background-color: #a5c8ed;
+            cursor: not-allowed;
+        }
+
+        .status {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="translator-container">
+    <h2>Local AI Translator</h2>
+    
+    <div class="panels">
+        <!-- Input Panel -->
+        <div class="panel">
+            <select id="source-lang">
+                <option value="English">English</option>
+                <option value="Spanish">Spanish</option>
+                <option value="French">French</option>
+                <option value="German">German</option>
+                <option value="Chinese">Chinese</option>
+                <option value="Japanese">Japanese</option>
+            </select>
+            <textarea id="input-text" placeholder="Type text here..."></textarea>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="panel">
+            <select id="target-lang">
+                <option value="Spanish" selected>Spanish</option>
+                <option value="English">English</option>
+                <option value="French">French</option>
+                <option value="German">German</option>
+                <option value="Chinese">Chinese</option>
+                <option value="Japanese">Japanese</option>
+            </select>
+            <textarea id="output-text" placeholder="Translation will appear here..." readonly></textarea>
+        </div>
+    </div>
+
+    <div class="button-zone">
+        <div>
+            <button id="translate-btn" onclick="performTranslation()">Translate</button>
+            <div id="status-msg" class="status"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function performTranslation() {
+        const inputText = document.getElementById('input-text').value;
+        const sourceLang = document.getElementById('source-lang').value;
+        const targetLang = document.getElementById('target-lang').value;
+        const outputText = document.getElementById('output-text');
+        const translateBtn = document.getElementById('translate-btn');
+        const statusMsg = document.getElementById('status-msg');
+
+        if (!inputText.trim()) {
+            outputText.value = '';
+            return;
+        }
+
+        // Update UI states for loading
+        translateBtn.disabled = true;
+        statusMsg.innerText = "Processing translation locally...";
+        outputText.value = "Translating...";
+
+        try {
+            const response = await fetch('/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: inputText,
+                    source_lang: sourceLang,
+                    target_lang: targetLang
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.translated_text !== undefined) {
+                outputText.value = data.translated_text;
+                statusMsg.innerText = "Success.";
+            } else if (data.error) {
+                outputText.value = "Error: " + data.error;
+                statusMsg.innerText = "Translation failed.";
+            }
+        } catch (error) {
+            outputText.value = "Could not connect to backend server.";
+            statusMsg.innerText = "Network Error.";
+            console.error(error);
+        } finally {
+            translateBtn.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>
